@@ -1,14 +1,28 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import ChatList from '@/components/ChatList';
+import ChatWindow from '@/components/ChatWindow';
+import Profile from '@/components/Profile';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
-const Index = () => {
+export default function Index() {
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
+    <ThemeProvider>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <ChatList 
+          onSelectChat={setSelectedChat} 
+          selectedChat={selectedChat}
+          onShowProfile={() => setShowProfile(true)}
+        />
+        
+        {showProfile ? (
+          <Profile onClose={() => setShowProfile(false)} />
+        ) : (
+          <ChatWindow chatId={selectedChat} />
+        )}
       </div>
-    </div>
+    </ThemeProvider>
   );
-};
-
-export default Index;
+}
