@@ -20,6 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import UserInfoModal from '@/components/UserInfoModal';
+import MediaMessage from '@/components/MediaMessage';
 import { useChats } from '@/contexts/ChatsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Message } from '@/types/chat';
@@ -37,6 +38,9 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
   const [editText, setEditText] = useState('');
   const [forwardingMessageId, setForwardingMessageId] = useState<string | null>(null);
   const [showUserInfo, setShowUserInfo] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const {
@@ -87,8 +91,44 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
     return getUserInfo(otherUserId);
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('Файл слишком большой. Максимальный размер: 10 МБ');
+      return;
+    }
+
+    setSelectedMedia(file);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMediaPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() && !selectedMedia) return;
+
+    let mediaAttachment = undefined;
+
+    if (selectedMedia && mediaPreview) {
+      const mediaType = selectedMedia.type.startsWith('image/') 
+        ? 'image' 
+        : selectedMedia.type.startsWith('video/')
+        ? 'video'
+        : 'document';
+
+      mediaAttachment = {
+        type: mediaType as 'image' | 'video' | 'document',
+        url: mediaPreview,
+        name: selectedMedia.name,
+        size: selectedMedia.size,
+      };
+    }
 
     const newMessage: Message = {
       id: `msg_${Date.now()}_${Math.random()}`,
@@ -97,10 +137,17 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
       text: inputValue,
       timestamp: new Date().toISOString(),
       read: false,
+      media: mediaAttachment,
     };
 
     addMessage(chatId, newMessage);
+    playMessageSent();
     setInputValue('');
+    setSelectedMedia(null);
+    setMediaPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleDeleteMessage = (messageId: string) => {
@@ -247,7 +294,12 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
                           Переслано
                         </p>
                       )}
-                      <p className="break-words">{message.text}</p>
+                      {message.media && (
+                        <div className="mb-2">
+                          <MediaMessage media={message.media} />
+                        </div>
+                      )}
+                      {message.text && <p className="break-words">{message.text}</p>}
                       {message.edited && (
                         <span className="text-xs opacity-70 ml-2">изменено</span>
                       )}
@@ -298,7 +350,46 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
 
       {!isSystemChat && !isBlocked && (
         <div className="border-t border-border p-4 bg-card flex-shrink-0">
+          {mediaPreview && (
+            <div className="mb-3 p-2 bg-muted rounded-lg flex items-center gap-2">
+              {selectedMedia?.type.startsWith('image/') && (
+                <img src={mediaPreview} alt="Preview" className="h-16 w-16 object-cover rounded" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{selectedMedia?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(selectedMedia?.size && (selectedMedia.size / 1024).toFixed(1))} KB
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSelectedMedia(null);
+                  setMediaPreview(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+              >
+                <Icon name="X" size={18} />
+              </Button>
+            </div>
+          )}
           <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0"
+            >
+              <Icon name="Paperclip" size={20} />
+            </Button>
             <Input
               placeholder="Написать сообщение..."
               value={inputValue}

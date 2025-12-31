@@ -13,6 +13,13 @@ export interface User {
   showLastSeen?: boolean;
 }
 
+export interface MediaAttachment {
+  type: 'image' | 'video' | 'document';
+  url: string;
+  name?: string;
+  size?: number;
+}
+
 export interface Message {
   id: string;
   chatId: string;
@@ -23,6 +30,7 @@ export interface Message {
   edited?: boolean;
   forwarded?: boolean;
   forwardedFrom?: string;
+  media?: MediaAttachment;
 }
 
 export interface Chat {
