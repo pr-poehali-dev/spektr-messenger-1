@@ -4,8 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
-import { useChats } from '@/hooks/useChats';
+import { useChats } from '@/contexts/ChatsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface ChatListProps {
@@ -16,11 +18,55 @@ interface ChatListProps {
 
 export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: ChatListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const { chats, currentUser } = useChats();
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const { chats, searchUsers, createOrGetChat, getUserInfo } = useChats();
+  const { user } = useAuth();
 
-  const filteredChats = chats.filter(chat =>
-    chat.user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length > 0) {
+      const results = await searchUsers(query);
+      setSearchResults(results);
+      setShowSearch(true);
+    } else {
+      setSearchResults([]);
+      setShowSearch(false);
+    }
+  };
+
+  const handleUserSelect = (userId: string) => {
+    const chatId = createOrGetChat(userId);
+    setSearchQuery('');
+    setShowSearch(false);
+    setSearchResults([]);
+    onSelectChat(chatId);
+  };
+
+  const getChatInfo = (chat: any) => {
+    if (chat.isSystemChat) {
+      return {
+        id: 'spektr',
+        name: 'Spektr',
+        username: 'Spektr',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=spektr',
+        isVerified: true,
+      };
+    }
+    
+    if (chat.isSavedMessages) {
+      return {
+        id: user?.id,
+        name: 'Избранное',
+        username: 'Сохранённые сообщения',
+        avatar: user?.avatar,
+        isVerified: false,
+      };
+    }
+
+    const otherUserId = chat.participants.find((id: string) => id !== user?.id);
+    return getUserInfo(otherUserId);
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -46,12 +92,12 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
               className="h-10 w-10 cursor-pointer ring-2 ring-primary/20 hover:ring-primary/40 transition-all"
               onClick={onShowProfile}
             >
-              <AvatarImage src={currentUser.avatar_url} alt={currentUser.username} />
-              <AvatarFallback>{currentUser.username[0]}</AvatarFallback>
+              <AvatarImage src={user?.avatar} alt={user?.name} />
+              <AvatarFallback>{user?.name[0]}</AvatarFallback>
             </Avatar>
             <div>
               <h2 className="font-semibold gradient-text text-lg">Spektr</h2>
-              <p className="text-xs text-muted-foreground">{currentUser.username}</p>
+              <p className="text-xs text-muted-foreground">{user?.username}</p>
             </div>
           </div>
         </div>
@@ -59,73 +105,115 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
         <div className="relative">
           <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Поиск чатов..."
+            placeholder="Поиск пользователей..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-muted/50 border-none"
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-10"
           />
         </div>
       </div>
 
+      <Dialog open={showSearch} onOpenChange={setShowSearch}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Результаты поиска</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px]">
+            {searchResults.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                Пользователи не найдены
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {searchResults.map((foundUser) => (
+                  <div
+                    key={foundUser.id}
+                    onClick={() => handleUserSelect(foundUser.id)}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                  >
+                    <Avatar>
+                      <AvatarImage src={foundUser.avatar} alt={foundUser.name} />
+                      <AvatarFallback>{foundUser.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <p className="font-medium">{foundUser.name}</p>
+                        {foundUser.isVerified && (
+                          <Icon name="BadgeCheck" size={16} className="text-blue-500" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">@{foundUser.username}</p>
+                    </div>
+                    <Button size="sm" variant="outline">
+                      Написать
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {filteredChats.map((chat) => (
-            <div
-              key={chat.id}
-              onClick={() => onSelectChat(chat.id)}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all mb-1",
-                "hover:bg-muted/50",
-                selectedChat === chat.id && "bg-primary/10 hover:bg-primary/15"
-              )}
-            >
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={chat.user.avatar_url} alt={chat.user.username} />
-                  <AvatarFallback>{chat.user.username[0]}</AvatarFallback>
-                </Avatar>
-                <div className={cn(
-                  "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card",
-                  chat.user.status === 'online' ? "bg-green-500" : "bg-gray-400"
-                )} />
-              </div>
+          {chats.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8 px-4">
+              <Icon name="MessageCircle" size={48} className="mx-auto mb-2 opacity-20" />
+              <p>Нет чатов</p>
+              <p className="text-sm">Используйте поиск для начала переписки</p>
+            </div>
+          ) : (
+            chats.map((chat) => {
+              const chatInfo = getChatInfo(chat);
+              if (!chatInfo) return null;
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-medium truncate">{chat.user.username}</h3>
-                  {chat.lastMessage && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(chat.lastMessage.created_at)}
-                    </span>
+              return (
+                <div
+                  key={chat.id}
+                  onClick={() => onSelectChat(chat.id)}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-accent',
+                    selectedChat === chat.id && 'bg-accent'
                   )}
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={chatInfo.avatar} alt={chatInfo.name} />
+                    <AvatarFallback>{chatInfo.name[0]}</AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
+                        <p className="font-semibold text-sm truncate">{chatInfo.name}</p>
+                        {chatInfo.isVerified && (
+                          <Icon name="BadgeCheck" size={14} className="text-blue-500 flex-shrink-0" />
+                        )}
+                        {chat.isSavedMessages && (
+                          <Icon name="Bookmark" size={14} className="text-primary flex-shrink-0" />
+                        )}
+                      </div>
+                      {chat.lastMessage && (
+                        <span className="text-xs text-muted-foreground">
+                          {formatTime(chat.lastMessage.timestamp)}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground truncate">
+                        {chat.lastMessage?.text || 'Нет сообщений'}
+                      </p>
+                      {chat.unreadCount > 0 && (
+                        <Badge variant="default" className="ml-2 h-5 min-w-5 flex items-center justify-center text-xs">
+                          {chat.unreadCount}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground truncate">
-                    {chat.user.customStatus || chat.lastMessage?.text || 'Нет сообщений'}
-                  </p>
-                  {chat.unreadCount > 0 && (
-                    <Badge className="ml-2 gradient-bg">{chat.unreadCount}</Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {filteredChats.length === 0 && !searchQuery && (
-            <div className="text-center py-12 px-4 text-muted-foreground">
-              <div className="gradient-bg w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Icon name="MessageCircle" className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">Чаты пусты</h3>
-              <p className="text-sm">Начните общение — добавьте новый контакт</p>
-            </div>
-          )}
-          
-          {filteredChats.length === 0 && searchQuery && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Icon name="Search" className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Ничего не найдено</p>
-            </div>
+              );
+            })
           )}
         </div>
       </ScrollArea>

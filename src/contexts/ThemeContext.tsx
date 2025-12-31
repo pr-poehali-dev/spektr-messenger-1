@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark' | 'spektr';
+type Theme = 'light' | 'dark' | 'spektr' | 'ocean' | 'sunset' | 'forest' | 'rose';
 
 interface ThemeContextType {
   theme: Theme;
@@ -10,17 +10,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem('theme');
+    return (saved as Theme) || 'light';
+  });
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('light', 'dark', 'theme-spektr');
+    root.classList.remove('light', 'dark', 'theme-spektr', 'theme-ocean', 'theme-sunset', 'theme-forest', 'theme-rose');
     
     if (theme === 'dark') {
       root.classList.add('dark');
-    } else if (theme === 'spektr') {
-      root.classList.add('theme-spektr');
+    } else if (theme !== 'light') {
+      root.classList.add(`theme-${theme}`);
     }
+
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   return (
