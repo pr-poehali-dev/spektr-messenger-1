@@ -19,10 +19,12 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import UserInfoModal from '@/components/UserInfoModal';
 import { useChats } from '@/contexts/ChatsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
+import { playMessageSent } from '@/lib/sounds';
 
 interface ChatWindowProps {
   chatId: string;
@@ -34,6 +36,7 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [forwardingMessageId, setForwardingMessageId] = useState<string | null>(null);
+  const [showUserInfo, setShowUserInfo] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const {
@@ -169,7 +172,10 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
           <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
             <Icon name="ArrowLeft" size={20} />
           </Button>
-          <Avatar className="h-10 w-10">
+          <Avatar 
+            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => !isSavedMessages && setShowUserInfo(true)}
+          >
             <AvatarImage src={chatInfo.avatar} alt={chatInfo.name} />
             <AvatarFallback>{chatInfo.name[0]}</AvatarFallback>
           </Avatar>
@@ -334,6 +340,12 @@ export default function ChatWindow({ chatId, onBack }: ChatWindowProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UserInfoModal 
+        user={chatInfo && !isSavedMessages ? getUserInfo(chatInfo.id) : null}
+        open={showUserInfo}
+        onClose={() => setShowUserInfo(false)}
+      />
 
       <Dialog open={!!forwardingMessageId} onOpenChange={() => setForwardingMessageId(null)}>
         <DialogContent>

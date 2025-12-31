@@ -9,6 +9,8 @@ export interface User {
   isVerified?: boolean;
   blockedUsers?: string[];
   createdAt: string;
+  lastSeenAt?: string;
+  showLastSeen?: boolean;
 }
 
 export interface Message {

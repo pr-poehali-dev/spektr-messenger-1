@@ -38,6 +38,7 @@ export default function Profile({ onClose }: ProfileProps) {
   const [bio, setBio] = useState(user?.bio || '');
   const [customStatus, setCustomStatus] = useState(user?.customStatus || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
+  const [showLastSeen, setShowLastSeen] = useState(user?.showLastSeen ?? true);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showOldPassword, setShowOldPassword] = useState(false);
@@ -52,6 +53,7 @@ export default function Profile({ onClose }: ProfileProps) {
       bio,
       customStatus,
       avatar: avatarUrl,
+      showLastSeen,
     });
 
     if (oldPassword && newPassword) {
@@ -272,6 +274,32 @@ export default function Profile({ onClose }: ProfileProps) {
                   ))}
                 </div>
               </RadioGroup>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Icon name="Lock" size={20} />
+                Приватность
+              </CardTitle>
+              <CardDescription>Настройки приватности вашего профиля</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Показывать время последнего посещения</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Если выключено, другие увидят "Не в сети"
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showLastSeen}
+                  onChange={(e) => setShowLastSeen(e.target.checked)}
+                  className="h-5 w-5 rounded border-input accent-primary cursor-pointer"
+                />
+              </div>
             </CardContent>
           </Card>
 

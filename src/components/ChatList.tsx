@@ -23,10 +23,9 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
   const { chats, searchUsers, createOrGetChat, getUserInfo } = useChats();
   const { user } = useAuth();
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim().length > 0) {
-      const results = await searchUsers(query);
+  const handleSearch = async () => {
+    if (searchQuery.trim().length > 0) {
+      const results = await searchUsers(searchQuery);
       setSearchResults(results);
       setShowSearch(true);
     } else {
@@ -102,14 +101,25 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
           </div>
         </div>
 
-        <div className="relative">
-          <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Поиск пользователей..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10"
-          />
+        <div className="relative flex gap-2">
+          <div className="relative flex-1">
+            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск пользователей..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={handleSearch}
+            disabled={!searchQuery.trim()}
+          >
+            <Icon name="Search" size={18} />
+          </Button>
         </div>
       </div>
 
@@ -177,10 +187,15 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
                     selectedChat === chat.id && 'bg-accent'
                   )}
                 >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={chatInfo.avatar} alt={chatInfo.name} />
-                    <AvatarFallback>{chatInfo.name[0]}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={chatInfo.avatar} alt={chatInfo.name} />
+                      <AvatarFallback>{chatInfo.name[0]}</AvatarFallback>
+                    </Avatar>
+                    {!chat.isSystemChat && !chat.isSavedMessages && chatInfo.status === 'online' && (
+                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
+                    )}
+                  </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">

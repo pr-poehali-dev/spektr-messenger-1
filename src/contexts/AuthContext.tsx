@@ -46,6 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isVerified: false,
       blockedUsers: [],
       createdAt: new Date().toISOString(),
+      lastSeenAt: new Date().toISOString(),
+      showLastSeen: true,
     };
 
     users[newUser.id] = {
@@ -112,6 +114,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const initializeDefaultChats = (userId: string) => {
+    const users = JSON.parse(localStorage.getItem('users') || '{}');
+    
+    if (!users['spektr']) {
+      users['spektr'] = {
+        user: {
+          id: 'spektr',
+          username: 'spektr',
+          name: 'Spektr',
+          avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=spektr',
+          bio: 'Официальный аккаунт Spektr',
+          status: 'online',
+          customStatus: 'Всегда на связи',
+          isVerified: true,
+          blockedUsers: [],
+          createdAt: new Date('2014-01-01').toISOString(),
+          lastSeenAt: new Date().toISOString(),
+          showLastSeen: true,
+        },
+        password: 'zzzz-2014',
+      };
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+
     const chats = JSON.parse(localStorage.getItem(`chats_${userId}`) || '[]');
     
     if (chats.length === 0) {
