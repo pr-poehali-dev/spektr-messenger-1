@@ -1,28 +1,16 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ChatList from '@/components/ChatList';
-import ChatWindow from '@/components/ChatWindow';
-import Profile from '@/components/Profile';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export default function Index() {
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
+  const navigate = useNavigate();
 
   return (
-    <ThemeProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
-        <ChatList 
-          onSelectChat={setSelectedChat} 
-          selectedChat={selectedChat}
-          onShowProfile={() => setShowProfile(true)}
-        />
-        
-        {showProfile ? (
-          <Profile onClose={() => setShowProfile(false)} />
-        ) : (
-          <ChatWindow chatId={selectedChat} />
-        )}
-      </div>
-    </ThemeProvider>
+    <div className="h-screen overflow-hidden bg-background">
+      <ChatList 
+        onSelectChat={(chatId) => navigate(`/chat/${chatId}`)} 
+        selectedChat={null}
+        onShowProfile={() => navigate('/profile')}
+      />
+    </div>
   );
 }
