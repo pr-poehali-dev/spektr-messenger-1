@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { currentUser as initialUser } from '@/data/mockData';
+import { useChats } from '@/hooks/useChats';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
@@ -18,17 +18,23 @@ interface ProfileProps {
 }
 
 export default function Profile({ onClose }: ProfileProps) {
-  const [user, setUser] = useState(initialUser);
+  const { currentUser, saveCurrentUser } = useChats();
+  const [user, setUser] = useState(currentUser);
   const [isEditing, setIsEditing] = useState(false);
   const { theme, setTheme } = useTheme();
 
+  useEffect(() => {
+    setUser(currentUser);
+  }, [currentUser]);
+
   const handleSave = () => {
+    saveCurrentUser(user);
     setIsEditing(false);
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background">
-      <div className="h-16 border-b border-border px-6 flex items-center justify-between bg-card">
+    <div className="flex flex-col bg-background h-screen">
+      <div className="h-16 border-b border-border px-4 md:px-6 flex items-center justify-between bg-card flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <Icon name="ArrowLeft" className="h-5 w-5" />
@@ -46,7 +52,7 @@ export default function Profile({ onClose }: ProfileProps) {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-6 max-w-2xl mx-auto space-y-6">
+        <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
           <Card className="border-2 border-primary/20 animate-fade-in">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">

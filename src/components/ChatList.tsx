@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/ui/icon';
-import { mockChats, currentUser } from '@/data/mockData';
+import { useChats } from '@/hooks/useChats';
 import { cn } from '@/lib/utils';
 
 interface ChatListProps {
@@ -15,8 +16,9 @@ interface ChatListProps {
 
 export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: ChatListProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const { chats, currentUser } = useChats();
 
-  const filteredChats = mockChats.filter(chat =>
+  const filteredChats = chats.filter(chat =>
     chat.user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -36,8 +38,8 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
   };
 
   return (
-    <div className="w-80 border-r border-border bg-card flex flex-col">
-      <div className="p-4 border-b border-border">
+    <div className="w-full md:w-80 md:border-r border-border bg-card flex flex-col h-screen">
+      <div className="p-4 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Avatar 
@@ -109,7 +111,17 @@ export default function ChatList({ onSelectChat, selectedChat, onShowProfile }: 
             </div>
           ))}
 
-          {filteredChats.length === 0 && (
+          {filteredChats.length === 0 && !searchQuery && (
+            <div className="text-center py-12 px-4 text-muted-foreground">
+              <div className="gradient-bg w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <Icon name="MessageCircle" className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Чаты пусты</h3>
+              <p className="text-sm">Начните общение — добавьте новый контакт</p>
+            </div>
+          )}
+          
+          {filteredChats.length === 0 && searchQuery && (
             <div className="text-center py-8 text-muted-foreground">
               <Icon name="Search" className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>Ничего не найдено</p>
